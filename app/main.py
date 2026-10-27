@@ -20,7 +20,7 @@ import i18n
 from i18n import tr
 
 APP_NAME = 'Atelier Texture Bridge'
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 ASSETS = os.path.join(core.BASE, 'assets')
 EXTS = ('.dds', '.png', '.tga')
 
@@ -40,15 +40,10 @@ QLabel#hint {{ color: {T['muted']}; font-size: 11px; }}
 QFrame#card {{ background: {T['surf1']}; border: 1px solid {T['border']}; border-radius: 8px; }}
 QFrame#card QLabel {{ background: transparent; }}
 
-QPushButton#segment {{
-  background: {T['surf2']}; border: 1px solid {T['border_strong']}; color: {T['muted']};
-  padding: 7px 18px; font-weight: 600; border-radius: 0;
-}}
-QPushButton#segment:hover {{ color: {T['bright']}; }}
-QPushButton#segment:checked {{
-  background: rgba(214, 172, 98, 0.18); border-color: {T['accent']}; color: {T['accent_hover']};
-}}
 QComboBox#lang {{ min-width: 120px; }}
+QComboBox#layout {{ min-width: 130px; font-weight: 600; }}
+QLabel#layoutCaption {{ color: {T['muted']}; font-size: 11px; }}
+QPushButton#swap {{ min-width: 34px; max-width: 34px; padding: 4px; font-size: 15px; }}
 
 QFrame#dropZone {{
   background: {T['view']}; border: 2px dashed {T['border_strong']}; border-radius: 10px;
@@ -144,10 +139,13 @@ def compose_preview(rgba, mask=None):
     return QtGui.QPixmap.fromImage(img.copy())
 
 
-def layout_name(is_3ba, head):
+LAYOUT_LABELS = {'3ba': '3BA / CBBE', 'unp': 'UNP / BHUNP', 'ube': 'UBE'}
+
+
+def layout_name(layout, head):
     if head:
-        return tr('layout_vanilla_head') if is_3ba else tr('layout_ube_head')
-    return '3BA' if is_3ba else 'UBE'
+        return tr('layout_ube_head') if layout == 'ube' else tr('layout_vanilla_head')
+    return core.LAYOUT_TAGS[layout]
 
 
 def summary_text(s):
@@ -376,22 +374,31 @@ class MainWindow(QtWidgets.QMainWindow):
         lay.addWidget(self.cb_lang)
         lay.addSpacing(14)
 
-        self.dir_group = QtWidgets.QButtonGroup(self)
-        self.btn_to_ube = QtWidgets.QPushButton('3BA  →  UBE')
-        self.btn_to_3ba = QtWidgets.QPushButton('UBE  →  3BA')
-        seg = QtWidgets.QHBoxLayout()
-        seg.setSpacing(0)
-        for i, b in enumerate((self.btn_to_ube, self.btn_to_3ba)):
-            b.setObjectName('segment')
-            b.setCheckable(True)
-            b.setCursor(Qt.CursorShape.PointingHandCursor)
-            self.dir_group.addButton(b, i)
-            seg.addWidget(b)
-        self.btn_to_ube.setStyleSheet('border-top-left-radius: 6px; border-bottom-left-radius: 6px;')
-        self.btn_to_3ba.setStyleSheet('border-top-right-radius: 6px; border-bottom-right-radius: 6px; border-left: none;')
-        self.btn_to_ube.setChecked(True)
-        self.dir_group.idClicked.connect(self.on_direction)
-        lay.addLayout(seg)
+        # direction: source layout -> target layout (3BA / CBBE, UNP / BHUNP, UBE)
+        self.cb_from, self.cb_to = QtWidgets.QComboBox(), QtWidgets.QComboBox()
+        self.lab_from, self.lab_to = QtWidgets.QLabel(), QtWidgets.QLabel()
+        for combo, lab, default in ((self.cb_from, self.lab_from, '3ba'), (self.cb_to, self.lab_to, 'ube')):
+            combo.setObjectName('layout')
+            for key in core.LAYOUTS:
+                combo.addItem(LAYOUT_LABELS[key], key)
+            combo.setCurrentIndex(core.LAYOUTS.index(default))
+            lab.setObjectName('layoutCaption')
+        self.btn_swap = QtWidgets.QPushButton('⇄')
+        self.btn_swap.setObjectName('swap')
+        self.btn_swap.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_swap.clicked.connect(self.swap_direction)
+        self.cb_from.currentIndexChanged.connect(lambda _i: self.on_layout_changed(self.cb_from))
+        self.cb_to.currentIndexChanged.connect(lambda _i: self.on_layout_changed(self.cb_to))
+        for combo, lab in ((self.cb_from, self.lab_from), (self.cb_to, self.lab_to)):
+            col = QtWidgets.QVBoxLayout()
+            col.setSpacing(2)
+            col.addWidget(lab)
+            col.addWidget(combo)
+            lay.addLayout(col)
+            if combo is self.cb_from:
+                lay.addSpacing(6)
+                lay.addWidget(self.btn_swap, 0, Qt.AlignmentFlag.AlignBottom)
+                lay.addSpacing(6)
         return w
 
     def build_queue(self):
@@ -578,8 +585,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def retranslate(self):
         self.subtitle.setText(tr('subtitle'))
         self.cb_lang.setToolTip(tr('lang_tip'))
-        self.btn_to_ube.setToolTip(tr('tip_to_ube'))
-        self.btn_to_3ba.setToolTip(tr('tip_to_3ba'))
+        self.lab_from.setText(tr('layout_from'))
+        self.lab_to.setText(tr('layout_to'))
+        self.cb_from.setToolTip(tr('layout_from_tip'))
+        self.cb_to.setToolTip(tr('layout_to_tip'))
+        self.btn_swap.setToolTip(tr('swap_tip'))
         self.btn_add.setText(tr('btn_files'))
         self.btn_add_dir.setText(tr('btn_folder'))
         self.btn_atlas.setText(tr('btn_auto_atlas'))
@@ -618,7 +628,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @property
     def direction(self):
-        return core.TO_UBE if self.btn_to_ube.isChecked() else core.TO_3BA
+        return self.cb_from.currentData(), self.cb_to.currentData()
 
     def units(self):
         """Top-level rows: single files and atlas groups — one conversion each (towards UBE)."""
@@ -663,7 +673,7 @@ class MainWindow(QtWidgets.QMainWindow):
         custom = self.ed_out.text().strip()
         if custom:
             return os.path.join(custom, rel)
-        return os.path.join(root, 'UBE' if self.direction == core.TO_UBE else '3BA', rel)
+        return os.path.join(root, core.LAYOUT_TAGS[self.direction[1]], rel)
 
     def update_state(self):
         n = self.tree.topLevelItemCount()
@@ -672,10 +682,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_label.setText(f"{tr('queue')} · {n}" if n else tr('queue'))
         self.btn_go.setEnabled(n > 0 and not busy)
         self.btn_stop.setVisible(busy)
-        for w in (self.btn_add, self.btn_add_dir, self.btn_remove, self.btn_clear, self.btn_to_ube, self.btn_to_3ba,
+        for w in (self.btn_add, self.btn_add_dir, self.btn_remove, self.btn_clear, self.cb_from, self.cb_to, self.btn_swap,
                   self.cb_res, self.cb_fmt, self.cb_opaque, self.ed_out, self.chk_over):
             w.setEnabled(not busy)
-        tag = 'UBE' if self.direction == core.TO_UBE else '3BA'
+        tag = core.LAYOUT_TAGS[self.direction[1]]
         self.out_hint.setText(tr('out_hint_custom') if self.ed_out.text().strip() else tr('out_hint_auto', tag=tag))
         if not busy:
             self.status.setText(self.finished_text() or (tr('status_ready') if n else tr('status_empty')))
@@ -691,7 +701,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for g in self.groups():
             g.setToolTip(COL_STATUS, self.output_path(g))
             self.render_group(g)
-        self.btn_atlas.setEnabled(not busy and self.direction == core.TO_UBE)
+        self.btn_atlas.setEnabled(not busy and core.atlas_direction(self.direction))
 
     # ------------------------------------------------------------ adding files
 
@@ -775,8 +785,8 @@ class MainWindow(QtWidgets.QMainWindow):
         g.setText(COL_PART, tr('part_atlas', n=g.childCount()))
         g.setText(COL_INFO, '→ UBE')
         if self.converter is None and (g.data(0, ROLE_STATUS) or ('idle',))[0] == 'idle':
-            to_ube = self.direction == core.TO_UBE
-            g.setData(0, ROLE_STATUS, ('idle', 'st_queued' if to_ube else 'st_split_3ba'))
+            to_ube = core.atlas_direction(self.direction)
+            g.setData(0, ROLE_STATUS, ('idle', 'st_queued') if to_ube else ('idle', 'st_split', None, {'arrow': self.arrow()}))
             for m in self.members(g):
                 if (m.data(0, ROLE_STATUS) or ('idle',))[0] == 'idle':
                     m.setData(0, ROLE_STATUS, ('idle', 'st_in_atlas' if to_ube else 'st_queued'))
@@ -832,7 +842,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def refresh_fit(self, it):
         if self.is_group(it):
             fits = [self.fit_of(m) for m in self.members(it)]
-            if self.direction != core.TO_UBE or any(f is None for f in fits):
+            if not core.atlas_direction(self.direction) or any(f is None for f in fits):
                 it.setText(COL_FIT, '')
                 return
             self.show_fit(it, min(fits))
@@ -943,7 +953,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 sub.addAction(tr('part_' + p), lambda p=p: [self.tree.itemWidget(i, COL_PART).setCurrentIndex(
                     core.PARTS.index(p)) for i in files])
         singles = [i for i in files if i.parent() is None]
-        if len(singles) >= 2 and len(singles) == len(sel) and self.direction == core.TO_UBE:
+        if len(singles) >= 2 and len(singles) == len(sel) and core.atlas_direction(self.direction):
             m.addAction(tr('menu_group'), lambda: (self.make_group(singles), self.update_state()))
         grouped = {id(g): g for g in [i for i in sel if self.is_group(i)] + [i.parent() for i in files if i.parent()]}
         if grouped:
@@ -965,7 +975,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(os.path.dirname(path)))
 
     def open_result(self, it, _col):
-        if it.parent() is not None and self.direction == core.TO_UBE:
+        if it.parent() is not None and core.atlas_direction(self.direction):
             it = it.parent()  # a member's result is the atlas
         out = self.output_path(it)
         src = self.base_member(it) if self.is_group(it) else it
@@ -980,6 +990,29 @@ class MainWindow(QtWidgets.QMainWindow):
         if cur is not None and (cur is it or cur is it.parent()):
             self.on_selection()
 
+    def on_layout_changed(self, changed):
+        """Keep source and target different: picking the other side's layout swaps them."""
+        other = self.cb_to if changed is self.cb_from else self.cb_from
+        if self.cb_from.currentData() == self.cb_to.currentData():
+            prev = getattr(self, '_last_direction', ('3ba', 'ube'))
+            keep = prev[1] if changed is self.cb_from else prev[0]
+            if keep == changed.currentData():
+                keep = next(k for k in core.LAYOUTS if k != changed.currentData())
+            other.blockSignals(True)
+            other.setCurrentIndex(core.LAYOUTS.index(keep))
+            other.blockSignals(False)
+        self._last_direction = self.direction
+        self.on_direction(None)
+
+    def swap_direction(self):
+        src, dst = self.direction
+        for combo, key in ((self.cb_from, dst), (self.cb_to, src)):
+            combo.blockSignals(True)
+            combo.setCurrentIndex(core.LAYOUTS.index(key))
+            combo.blockSignals(False)
+        self._last_direction = self.direction
+        self.on_direction(None)
+
     def on_direction(self, _id):
         self.update_state()
         self.on_selection()
@@ -990,7 +1023,7 @@ class MainWindow(QtWidgets.QMainWindow):
         it = self.tree.currentItem()
         if it is None or not it.isSelected():
             return
-        if self.is_group(it) and self.direction == core.TO_UBE:
+        if self.is_group(it) and core.atlas_direction(self.direction):
             rows = self.members(it)
         else:
             rows = [self.base_member(it) if self.is_group(it) else it]
@@ -1011,10 +1044,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.prev_out_cap.setText('')
             self.prev_note.setText(tr('prev_idle'))
             return
-        to_ube, head = self.preview_dir == core.TO_UBE, self.preview_part == 'head'
-        before = layout_name(to_ube, head) + (f' ×{self.preview_count}' if self.preview_count > 1 else '')
+        (src, dst), head = self.preview_dir, self.preview_part == 'head'
+        before = layout_name(src, head) + (f' ×{self.preview_count}' if self.preview_count > 1 else '')
         self.prev_src_cap.setText(tr('prev_before', layout=before))
-        self.prev_out_cap.setText(tr('prev_after', layout=layout_name(not to_ube, head)))
+        self.prev_out_cap.setText(tr('prev_after', layout=layout_name(dst, head)))
         self.prev_note.setText({'busy': tr('prev_busy'), 'done': tr('prev_done')}.get(
             self.preview_state) or tr('prev_fail', err=error_text(self.preview_err)))
 
@@ -1025,7 +1058,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.preview_state, self.preview_err = 'fail', err
         else:
             d, p = self.preview_dir, self.preview_part
-            other = core.TO_3BA if d == core.TO_UBE else core.TO_UBE
+            other = d[::-1]
             self.prev_src.setPixmap(compose_preview(src, core.source_layout(d, p)))
             islands = np.logical_or.reduce([core.source_layout(other, q) for q in self.preview_parts])
             self.prev_out.setPixmap(compose_preview(out, islands))
@@ -1041,7 +1074,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def start(self):
         items, jobs = [], []
         for u in self.units():
-            if self.is_group(u) and self.direction == core.TO_UBE:
+            if self.is_group(u) and core.atlas_direction(self.direction):
                 try:
                     core.check_atlas([self.part_of(m) for m in self.members(u)], os.path.basename(self.output_path(u)))
                 except core.UserError as e:
@@ -1077,7 +1110,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.converter.start()
 
     def arrow(self):
-        return '3BA → UBE' if self.direction == core.TO_UBE else 'UBE → 3BA'
+        src, dst = self.direction
+        return f'{core.LAYOUT_TAGS[src]} → {core.LAYOUT_TAGS[dst]}'
 
     def stop(self):
         if self.converter:
@@ -1157,8 +1191,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cb_lang.blockSignals(False)
         i18n.set_lang(self.cb_lang.currentData())
         apply_theme(self.app)
-        if s.value('direction', core.TO_UBE) == core.TO_3BA:
-            self.btn_to_3ba.setChecked(True)
+        src, dst = s.value('layout_from', '3ba'), s.value('layout_to', 'ube')
+        if src in core.LAYOUTS and dst in core.LAYOUTS and src != dst:
+            for combo, key in ((self.cb_from, src), (self.cb_to, dst)):
+                combo.blockSignals(True)
+                combo.setCurrentIndex(core.LAYOUTS.index(key))
+                combo.blockSignals(False)
+        self._last_direction = self.direction
         for combo, key in ((self.cb_res, 'res'), (self.cb_fmt, 'fmt'), (self.cb_opaque, 'opaque')):
             i = combo.findData(s.value(key, combo.currentData(), type=type(combo.currentData())))
             if i >= 0:
@@ -1180,7 +1219,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.converter.wait(60000)
         s = self.settings
         s.setValue('lang', i18n.lang())
-        s.setValue('direction', self.direction)
+        s.setValue('layout_from', self.direction[0])
+        s.setValue('layout_to', self.direction[1])
         s.setValue('res', self.cb_res.currentData())
         s.setValue('fmt', self.cb_fmt.currentData())
         s.setValue('opaque', self.cb_opaque.currentData())
@@ -1192,9 +1232,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 def cli(args):
-    """AtelierTextureBridge.exe --cli to_ube|to_3ba body|hands|feet|head <src> <dst> [--res N] [--format F]
+    """AtelierTextureBridge.exe --cli <from>-<to> body|hands|feet|head <src> <dst> [--res N] [--format F]
+    <from>-<to> is two of 3ba / unp / ube, e.g. 3ba-unp; the 1.x spellings to_ube / to_3ba still work.
     Exit code 0 on success; the summary or error also goes to <dst>.log (the GUI build has no console)."""
-    direction, part, src, dst = args[:4]
+    spec, part, src, dst = args[:4]
+    direction = {'to_ube': core.TO_UBE, 'to_3ba': core.TO_3BA}.get(spec) or tuple(spec.lower().split('-'))
     res = int(args[args.index('--res') + 1]) if '--res' in args else None
     fmt = args[args.index('--format') + 1] if '--format' in args else 'auto'
     try:

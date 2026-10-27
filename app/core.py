@@ -1,6 +1,7 @@
-"""Conversion core: 3BA (CBBE UVs, vanilla head) <-> UBE body atlas / UBE head.
+"""Conversion core between three female body UV layouts: 3BA / CBBE, UNP / BHUNP (both with the vanilla head) and
+UBE (one body atlas + UBE head).
 
-A coordinate map baked once from Grognak's StencilTool.blend says,
+A coordinate map baked once from the body meshes (Grognak's StencilTool.blend; BHUNP added by tools/bake_unp.py) says,
 for every texel of the target layout, where to read the source texture. Pixels are resampled with premultiplied
 bilinear filtering, so colour and alpha stay as authored (no re-lighting, no gamma shift). The maps ship with the
 app (maps/*.npz, 4096 px, built by tools/bake_maps.py + tools/pack_maps.py), so Blender is not needed at runtime.
@@ -31,8 +32,13 @@ MAP_RES = 4096
 NONE = 65535
 CREATE_NO_WINDOW = 0x08000000
 
-TO_UBE, TO_3BA = 'to_ube', 'to_3ba'
+LAYOUTS = ('3ba', 'unp', 'ube')
+LAYOUT_TAGS = {'3ba': '3BA', 'unp': 'UNP', 'ube': 'UBE'}  # output subfolder and short display name
+TO_UBE, TO_3BA = ('3ba', 'ube'), ('ube', '3ba')  # a direction is a (source layout, target layout) pair
 PARTS = ('body', 'hands', 'feet', 'head')
+# maps that are not shipped: the coordinates are chained at load time through the 3BA layout
+COMPOSED = {f'unp_{p}-ube': (f'3ba_{p}-ube', f'unp_{p}-3ba_{p}') for p in ('body', 'hands', 'feet')}
+COMPOSED.update({f'ube-unp_{p}': (f'3ba_{p}-unp_{p}', f'ube-3ba_{p}') for p in ('body', 'hands', 'feet')})
 
 
 class UserError(Exception):
@@ -46,10 +52,28 @@ class ExistsError(UserError):
     pass
 
 
+def texture_id(layout, part):
+    """Which texture layout a part lives in: UBE's body, hands and feet share one atlas, and 3BA and UNP both use
+    the vanilla head."""
+    if part == 'head':
+        return 'ube_head' if layout == 'ube' else '3ba_head'
+    return 'ube' if layout == 'ube' else f'{layout}_{part}'
+
+
 def map_name(direction, part):
-    if direction == TO_UBE:
-        return '3ba_head-ube_head' if part == 'head' else f'3ba_{part}-ube'
-    return 'ube_head-3ba_head' if part == 'head' else f'ube-3ba_{part}'
+    src, dst = direction
+    return f'{texture_id(src, part)}-{texture_id(dst, part)}'
+
+
+def is_identity(direction, part):
+    """3BA <-> UNP faces: both are the vanilla head, nothing moves."""
+    src, dst = direction
+    return texture_id(src, part) == texture_id(dst, part)
+
+
+def atlas_direction(direction):
+    """Several 3BA / UNP textures can merge into the one UBE atlas."""
+    return direction[1] == 'ube' and direction[0] != 'ube'
 
 
 # ---------------------------------------------------------------- guessing what a file is
@@ -211,15 +235,39 @@ def save_texture(path, rgba, fmt, srgb=False):
 
 # ---------------------------------------------------------------- maps
 
-@lru_cache(maxsize=4)
+@lru_cache(maxsize=5)  # a composed map needs its two parts loaded too; ~80 MB each at 4K
 def _load_map(name):
+    if name in COMPOSED:
+        return _compose(*COMPOSED[name])
+    if name.split('-')[0] == name.split('-')[1]:
+        return _identity_map()
     z = np.load(os.path.join(MAPS_DIR, name + '.npz'))
     u, v = z['u'], z['v']
     cov = u != NONE
     return u, v, cov
 
 
-@lru_cache(maxsize=6)
+def _identity_map():
+    c = np.minimum(((np.arange(MAP_RES) + 0.5) / MAP_RES * NONE).round(), NONE - 1).astype(np.uint16)
+    return np.broadcast_to(c[None, :], (MAP_RES, MAP_RES)), np.broadcast_to(c[:, None], (MAP_RES, MAP_RES)), \
+        np.ones((MAP_RES, MAP_RES), bool)
+
+
+def _compose(outer, inner):
+    """Target texel -> intermediate (3BA) coordinate through `outer`, then -> source coordinate through `inner`,
+    read at the nearest intermediate texel (4K maps: under half a texel). Only coordinates are chained; the
+    pixels are still resampled once."""
+    ou, ov, oc = _load_map(outer)
+    iu, iv, ic = _load_map(inner)
+    x = np.minimum((ou.astype(np.float32) / NONE * MAP_RES).astype(np.int32), MAP_RES - 1)
+    y = np.minimum((ov.astype(np.float32) / NONE * MAP_RES).astype(np.int32), MAP_RES - 1)
+    cov = oc & ic[y, x]
+    u = np.where(cov, iu[y, x], NONE).astype(np.uint16)
+    v = np.where(cov, iv[y, x], NONE).astype(np.uint16)
+    return u, v, cov
+
+
+@lru_cache(maxsize=3)  # float32 copies, ~150 MB each at 4K
 def get_map(name, res):
     """(u, v, covered) at the requested output resolution; u, v float32 in [0, 1] of the source texture.
     Lower resolutions take, per output texel, the shipped texel nearest its centre (no averaging across seams)."""
@@ -287,9 +335,9 @@ def _masks():
 
 
 def part_maps(direction, part):
-    """Maps one texture of this part goes through. CBBE paints the feet on the body texture (femalebody_1.dds has
-    the toes and soles in its upper corners), so 'body' carries body + feet both ways; 'feet' alone is for
-    feet-only overlays (SlaveTats Feet area)."""
+    """Maps one texture of this part goes through. CBBE and UNP paint the feet on the body texture (toes and soles
+    in its upper corners) and UBE keeps them in its atlas, so 'body' carries body + feet in every direction; 'feet'
+    alone is for feet-only overlays (SlaveTats Feet area)."""
     if part == 'body':
         return [map_name(direction, 'body'), map_name(direction, 'feet')]
     return [map_name(direction, part)]
@@ -297,9 +345,10 @@ def part_maps(direction, part):
 
 def source_layout(direction, part):
     """Islands of the layout a texture must be in to be converted this way (the opposite maps' coverage)."""
-    other = TO_3BA if direction == TO_UBE else TO_UBE
+    if is_identity(direction, part):
+        return np.ones((512, 512), bool)
     m = _masks()
-    return np.logical_or.reduce([m[n] for n in part_maps(other, part)])
+    return np.logical_or.reduce([m[n] for n in part_maps(direction[::-1], part)])
 
 
 @dataclass
@@ -317,7 +366,7 @@ def analyze(path):
     small = np.asarray(Image.fromarray((a * 255).astype(np.uint8)).resize((512, 512), Image.BOX), np.float32)
     total = small.sum()
     fit = {}
-    for d in (TO_UBE, TO_3BA):
+    for d in ((a, b) for a in LAYOUTS for b in LAYOUTS if a != b):
         for p in PARTS:
             fit[(d, p)] = 1.0 if opaque or total <= 0 else float(small[source_layout(d, p)].sum() / total)
     # Only a hint: the layouts overlap a lot (the head islands fill ~80 % of their square), so a low score
@@ -396,7 +445,7 @@ def convert_sources(sources, dst_path, direction, opts: Options):
     sources = _ordered(sources)
     if len(sources) > 1:
         name = os.path.basename(dst_path)
-        if direction != TO_UBE:
+        if not atlas_direction(direction):
             raise UserError('group_bad', name=name)
         check_atlas([p for _, p in sources], name)
     if os.path.exists(dst_path) and not opts.overwrite:

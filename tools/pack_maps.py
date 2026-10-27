@@ -6,8 +6,12 @@ Also prints a round-trip check: source -> target -> source should land on the te
 venv\\Scripts\\python.exe tools\\pack_maps.py"""
 import glob
 import os
+import sys
 
 import numpy as np
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'app'))
+from core import COMPOSED  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RAW = os.path.join(HERE, '..', 'maps_raw')
@@ -65,18 +69,33 @@ def main():
     for name, (m, cov) in maps.items():
         k = cov.shape[0] // MASK_RES
         masks[name] = cov.reshape(MASK_RES, k, MASK_RES, k).any(axis=(1, 3))
+    # UNP <-> UBE maps are composed in the app (core.COMPOSED); their masks are composed the same way here
+    for name, (outer, inner) in COMPOSED.items():
+        if outer in maps and inner in maps:
+            (om, oc), (_im, ic) = maps[outer], maps[inner]
+            res = oc.shape[0]
+            x = np.clip((om[..., 0] * res).astype(np.int32), 0, res - 1)
+            y = np.clip((om[..., 1] * res).astype(np.int32), 0, res - 1)
+            cov = oc & ic[y, x]
+            k = res // MASK_RES
+            masks[name] = cov.reshape(MASK_RES, k, MASK_RES, k).any(axis=(1, 3))
+            print(f'{name:22s} composed, covered {cov.mean():6.1%}')
     np.savez_compressed(os.path.join(OUT, 'masks.npz'), **{n.replace('-', '__'): v for n, v in masks.items()})
 
-    # round trip on 3BA texels: 3BA -> UBE (reverse map) -> 3BA (forward map)
-    for part in ('body', 'hands', 'feet', 'head'):
-        rev = maps['ube_head-3ba_head' if part == 'head' else f'ube-3ba_{part}']
-        fwd = maps['3ba_head-ube_head' if part == 'head' else f'3ba_{part}-ube']
+    # round trip on 3BA texels: 3BA -> other layout (reverse map) -> 3BA (forward map)
+    pairs = [('UBE', part, 'ube_head-3ba_head' if part == 'head' else f'ube-3ba_{part}',
+              '3ba_head-ube_head' if part == 'head' else f'3ba_{part}-ube') for part in ('body', 'hands', 'feet', 'head')]
+    pairs += [('UNP', part, f'unp_{part}-3ba_{part}', f'3ba_{part}-unp_{part}') for part in ('body', 'hands', 'feet')]
+    for other, part, rev_name, fwd_name in pairs:
+        if rev_name not in maps or fwd_name not in maps:
+            continue
+        rev, fwd = maps[rev_name], maps[fwd_name]
         m, cov = rev
         ys, xs = np.nonzero(cov)
         start = (np.stack([xs, ys], 1) + 0.5) / m.shape[0]
         back, hit = lookup(*fwd, m[ys, xs, :2])
         err = np.hypot(*((back[hit] - start[hit]) * 4096).T)
-        print(f'round trip {part:5s}: {hit.mean():6.1%} of texels return, median error {np.median(err):.2f} px, '
+        print(f'round trip 3BA<>{other} {part:5s}: {hit.mean():6.1%} of texels return, median error {np.median(err):.2f} px, '
               f'95% {np.percentile(err, 95):.2f} px (4K)')
 
 

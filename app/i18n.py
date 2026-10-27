@@ -26,33 +26,6 @@ def tr(key, **kw):
 
 
 S = {
-    'subtitle': (
-        'Move overlays and body textures between the 3BA (CBBE) and UBE layouts',
-        'Перенос оверлеев и текстур тела между раскладками 3BA (CBBE) и UBE',
-        'Overlays und Körpertexturen zwischen den UV-Layouts von 3BA (CBBE) und UBE übertragen',
-        'Transférez overlays et textures de corps entre les dispositions UV 3BA (CBBE) et UBE',
-        'Traslada overlays y texturas corporales entre las distribuciones UV de 3BA (CBBE) y UBE',
-        '在 3BA (CBBE) 与 UBE 的 UV 布局之间转换叠加层和身体贴图',
-        'オーバーレイと身体テクスチャを 3BA (CBBE) と UBE の UV レイアウト間で変換します',
-        '3BA(CBBE)와 UBE UV 레이아웃 간에 오버레이와 바디 텍스처를 변환합니다'),
-    'tip_to_ube': (
-        'Textures made for 3BA / CBBE (and the vanilla head) → UBE body',
-        'Текстуры, сделанные под 3BA / CBBE (и ванильную голову) → тело UBE',
-        'Für 3BA / CBBE (und den Vanilla-Kopf) erstellte Texturen → UBE-Körper',
-        'Textures conçues pour 3BA / CBBE (et la tête vanilla) → corps UBE',
-        'Texturas hechas para 3BA / CBBE (y la cabeza vanilla) → cuerpo UBE',
-        '为 3BA / CBBE（及原版头部）制作的贴图 → UBE 身体',
-        '3BA / CBBE（およびバニラの頭部）用のテクスチャ → UBE ボディ',
-        '3BA / CBBE(및 바닐라 머리)용 텍스처 → UBE 바디'),
-    'tip_to_3ba': (
-        'UBE textures (body atlas and UBE head) → 3BA / CBBE',
-        'Текстуры UBE (атлас тела и голова UBE) → 3BA / CBBE',
-        'UBE-Texturen (Körperatlas und UBE-Kopf) → 3BA / CBBE',
-        'Textures UBE (atlas du corps et tête UBE) → 3BA / CBBE',
-        'Texturas UBE (atlas corporal y cabeza UBE) → 3BA / CBBE',
-        'UBE 贴图（身体图集与 UBE 头部）→ 3BA / CBBE',
-        'UBE テクスチャ（ボディアトラスと UBE 頭部）→ 3BA / CBBE',
-        'UBE 텍스처(바디 아틀라스 및 UBE 머리) → 3BA / CBBE'),
     'lang_tip': ('Interface language', 'Язык интерфейса', 'Sprache der Oberfläche', "Langue de l'interface",
                  'Idioma de la interfaz', '界面语言', '表示言語', '인터페이스 언어'),
     'queue': ('QUEUE', 'ОЧЕРЕДЬ', 'WARTESCHLANGE', "FILE D'ATTENTE", 'COLA', '队列', 'キュー', '대기열'),
@@ -171,11 +144,6 @@ S = {
         '투명도가 있는 오버레이는 그대로 변환됩니다.'),
     'opt_output': ('Save to', 'Куда сохранять', 'Speichern unter', 'Enregistrer dans', 'Guardar en', '保存到',
                    '保存先', '저장 위치'),
-    'out_placeholder': (
-        'Next to the source (UBE / 3BA subfolder)', 'Рядом с исходником (подпапка UBE / 3BA)',
-        'Neben der Quelle (Unterordner UBE / 3BA)', 'À côté de la source (sous-dossier UBE / 3BA)',
-        'Junto al origen (subcarpeta UBE / 3BA)', '源文件旁（UBE / 3BA 子文件夹）',
-        '元ファイルの隣（UBE / 3BA サブフォルダー）', '원본 옆 (UBE / 3BA 하위 폴더)'),
     'out_hint_custom': (
         'The subfolder structure relative to the added folder is kept.',
         'Структура подпапок относительно добавленной папки сохраняется.',
@@ -209,41 +177,6 @@ S = {
                  '完了したらフォルダーを開く', '완료 후 폴더 열기'),
     'card_how': ('HOW IT WORKS', 'КАК ЭТО РАБОТАЕТ', 'SO FUNKTIONIERT ES', 'FONCTIONNEMENT', 'CÓMO FUNCIONA',
                  '工作原理', '仕組み', '작동 방식'),
-    'how_text': (
-        'Each pixel is moved along a UV correspondence map baked from the 3BA and UBE meshes. Colour and alpha '
-        'are not recalculated, so overlays look exactly as their author made them.<br><br><b>Body, hands and '
-        'feet</b> of 3BA share one UBE atlas. <b>Face</b>: vanilla head ⇄ UBE head.<br>Normal maps are carried '
-        'over, but the directions stored in them are not rotated, so check them in game.',
-        'Каждый пиксель переносится по карте соответствия UV, запечённой с мешей 3BA и UBE. Цвет и альфа не '
-        'пересчитываются — оверлеи выглядят так же, как задумал автор.<br><br><b>Тело, руки и ступни</b> 3BA '
-        'сходятся в один атлас UBE. <b>Лицо</b>: ванильная голова ⇄ голова UBE.<br>Карты нормалей переносятся, '
-        'но направления в них не поворачиваются — проверяйте в игре.',
-        'Jeder Pixel wird entlang einer UV-Zuordnungskarte übertragen, die aus den 3BA- und UBE-Meshes gebacken '
-        'wurde. Farbe und Alpha werden nicht neu berechnet – Overlays sehen genau so aus, wie ihr Autor sie '
-        'gestaltet hat.<br><br><b>Körper, Hände und Füße</b> von 3BA landen in einem gemeinsamen UBE-Atlas. '
-        '<b>Gesicht</b>: Vanilla-Kopf ⇄ UBE-Kopf.<br>Normal Maps werden übertragen, die darin gespeicherten '
-        'Richtungen aber nicht gedreht – bitte im Spiel prüfen.',
-        'Chaque pixel est déplacé selon une carte de correspondance UV précalculée à partir des maillages 3BA et '
-        'UBE. La couleur et l\'alpha ne sont pas recalculés : les overlays restent tels que leur auteur les a '
-        'conçus.<br><br>Le <b>corps, les mains et les pieds</b> 3BA partagent un seul atlas UBE. '
-        '<b>Visage</b> : tête vanilla ⇄ tête UBE.<br>Les normal maps sont transférées, mais les directions '
-        'qu\'elles contiennent ne sont pas pivotées : vérifiez-les en jeu.',
-        'Cada píxel se traslada según un mapa de correspondencia UV horneado a partir de las mallas de 3BA y UBE. '
-        'El color y el alfa no se recalculan: los overlays se ven tal como los diseñó su autor.<br><br>El '
-        '<b>cuerpo, las manos y los pies</b> de 3BA comparten un único atlas UBE. <b>Cara</b>: cabeza vanilla ⇄ '
-        'cabeza UBE.<br>Los mapas de normales se trasladan, pero las direcciones que contienen no se rotan: '
-        'compruébalos en el juego.',
-        '每个像素都按照由 3BA 与 UBE 模型烘焙出的 UV 对应图进行迁移。颜色和 Alpha 不会被重新计算，叠加层的效果与作者'
-        '原作完全一致。<br><br>3BA 的<b>身体、手部和足部</b>共用一张 UBE 图集。<b>面部</b>：原版头部 ⇄ UBE 头部。<br>'
-        '法线贴图也会迁移，但其中存储的方向不会随之旋转，请在游戏中检查。',
-        '各ピクセルは、3BA と UBE のメッシュからベイクした UV 対応マップに沿って移されます。色とアルファは再計算され'
-        'ないため、オーバーレイは作者の意図どおりに表示されます。<br><br>3BA の<b>ボディ・手・足</b>は 1 枚の UBE '
-        'アトラスにまとめられます。<b>顔</b>：バニラ頭部 ⇄ UBE 頭部。<br>ノーマルマップも変換されますが、法線の向きは'
-        '回転されないため、ゲーム内で確認してください。',
-        '각 픽셀은 3BA와 UBE 메시에서 베이크한 UV 대응 맵을 따라 옮겨집니다. 색상과 알파는 다시 계산되지 않으므로 '
-        '오버레이가 제작자의 의도 그대로 보입니다.<br><br>3BA의 <b>바디, 손, 발</b>은 하나의 UBE 아틀라스를 함께 '
-        '씁니다. <b>얼굴</b>: 바닐라 머리 ⇄ UBE 머리.<br>노멀 맵도 변환되지만 그 안의 방향은 회전되지 않으니 게임에서 '
-        '확인하세요.'),
     'status_ready': ('Ready', 'Готов к работе', 'Bereit', 'Prêt', 'Listo', '就绪', '準備完了', '준비됨'),
     'status_empty': ('Add textures to begin', 'Добавьте текстуры, чтобы начать', 'Texturen hinzufügen, um zu beginnen',
                      'Ajoutez des textures pour commencer', 'Añade texturas para empezar', '添加贴图以开始',
@@ -414,28 +347,96 @@ S = {
         '아틀라스에는 바디·손·발 텍스처를 각각 하나까지만 넣을 수 있으며 얼굴은 넣을 수 없습니다: {name}'),
     'st_in_atlas': ('goes into the atlas', 'входит в атлас', 'geht in den Atlas ein', "intégrée à l'atlas",
                     'va al atlas', '并入图集', 'アトラスに統合', '아틀라스에 포함'),
-    'st_split_3ba': ('UBE → 3BA: each file separately', 'UBE → 3BA: каждый файл отдельно',
-                     'UBE → 3BA: jede Datei einzeln', 'UBE → 3BA : chaque fichier séparément',
-                     'UBE → 3BA: cada archivo por separado', 'UBE → 3BA：逐个文件单独转换',
-                     'UBE → 3BA：ファイルごとに個別変換', 'UBE → 3BA: 파일별로 따로 변환'),
+    'subtitle': (
+        'Move overlays and body textures between the 3BA (CBBE), UNP (BHUNP) and UBE layouts',
+        'Перенос оверлеев и текстур тела между раскладками 3BA (CBBE), UNP (BHUNP) и UBE',
+        'Overlays und Körpertexturen zwischen den UV-Layouts von 3BA (CBBE), UNP (BHUNP) und UBE übertragen',
+        'Transférez overlays et textures de corps entre les dispositions UV 3BA (CBBE), UNP (BHUNP) et UBE',
+        'Traslada overlays y texturas corporales entre las distribuciones UV de 3BA (CBBE), UNP (BHUNP) y UBE',
+        '在 3BA (CBBE)、UNP (BHUNP) 与 UBE 的 UV 布局之间转换叠加层和身体贴图',
+        'オーバーレイと身体テクスチャを 3BA (CBBE)・UNP (BHUNP)・UBE の UV レイアウト間で変換します',
+        '3BA(CBBE), UNP(BHUNP), UBE UV 레이아웃 간에 오버레이와 바디 텍스처를 변환합니다'),
+    'layout_from': (
+        'From',
+        'Из',
+        'Von',
+        'De',
+        'De',
+        '源布局',
+        '変換元',
+        '원본 레이아웃'),
+    'layout_to': (
+        'To',
+        'В',
+        'Nach',
+        'Vers',
+        'A',
+        '目标布局',
+        '変換先',
+        '대상 레이아웃'),
+    'layout_from_tip': (
+        'The body the textures were made for',
+        'Тело, под которое сделаны текстуры',
+        'Der Körper, für den die Texturen gemacht wurden',
+        'Le corps pour lequel les textures ont été faites',
+        'El cuerpo para el que se hicieron las texturas',
+        '贴图原本适配的身体',
+        'テクスチャの作成元のボディ',
+        '텍스처가 원래 맞춰진 바디'),
+    'layout_to_tip': (
+        'The body the textures should fit',
+        'Тело, под которое их нужно перенести',
+        'Der Körper, zu dem die Texturen passen sollen',
+        "Le corps auquel les textures doivent s'adapter",
+        'El cuerpo al que deben ajustarse las texturas',
+        '贴图需要适配的身体',
+        'テクスチャを合わせたいボディ',
+        '텍스처를 맞출 바디'),
+    'swap_tip': (
+        'Swap source and target',
+        'Поменять местами',
+        'Quelle und Ziel tauschen',
+        'Inverser source et cible',
+        'Intercambiar origen y destino',
+        '交换源与目标',
+        '変換元と変換先を入れ替え',
+        '원본과 대상 바꾸기'),
+    'st_split': (
+        '{arrow}: each file separately',
+        '{arrow}: каждый файл отдельно',
+        '{arrow}: jede Datei einzeln',
+        '{arrow} : chaque fichier séparément',
+        '{arrow}: cada archivo por separado',
+        '{arrow}：逐个文件单独转换',
+        '{arrow}：ファイルごとに個別変換',
+        '{arrow}: 파일별로 따로 변환'),
+    'out_placeholder': (
+        'Next to the source (subfolder named after the target body)',
+        'Рядом с исходником (подпапка с именем целевого тела)',
+        'Neben der Quelle (Unterordner nach dem Zielkörper benannt)',
+        'À côté de la source (sous-dossier au nom du corps cible)',
+        'Junto al origen (subcarpeta con el nombre del cuerpo de destino)',
+        '源文件旁（以目标身体命名的子文件夹）',
+        '元ファイルの隣（変換先ボディ名のサブフォルダー）',
+        '원본 옆 (대상 바디 이름의 하위 폴더)'),
+    'how_text': (
+        'Each pixel is moved along a UV correspondence map baked from the body meshes. Colour and alpha are not recalculated, so overlays look exactly as their author made them.<br><br><b>Body, hands and feet</b> of 3BA share one UBE atlas. <b>Face</b>: vanilla head ⇄ UBE head.<br>Normal maps are carried over, but the directions stored in them are not rotated, so check them in game.',
+        'Каждый пиксель переносится по карте соответствия UV, запечённой с мешей тел. Цвет и альфа не пересчитываются — оверлеи выглядят так же, как задумал автор.<br><br><b>Тело, руки и ступни</b> 3BA сходятся в один атлас UBE. <b>Лицо</b>: ванильная голова ⇄ голова UBE.<br>Карты нормалей переносятся, но направления в них не поворачиваются — проверяйте в игре.',
+        'Jeder Pixel wird entlang einer UV-Zuordnungskarte übertragen, die aus den Körper-Meshes gebacken wurde. Farbe und Alpha werden nicht neu berechnet – Overlays sehen genau so aus, wie ihr Autor sie gestaltet hat.<br><br><b>Körper, Hände und Füße</b> von 3BA landen in einem gemeinsamen UBE-Atlas. <b>Gesicht</b>: Vanilla-Kopf ⇄ UBE-Kopf.<br>Normal Maps werden übertragen, die darin gespeicherten Richtungen aber nicht gedreht – bitte im Spiel prüfen.',
+        "Chaque pixel est déplacé selon une carte de correspondance UV précalculée à partir des maillages des corps. La couleur et l'alpha ne sont pas recalculés : les overlays restent tels que leur auteur les a conçus.<br><br>Le <b>corps, les mains et les pieds</b> 3BA partagent un seul atlas UBE. <b>Visage</b> : tête vanilla ⇄ tête UBE.<br>Les normal maps sont transférées, mais les directions qu'elles contiennent ne sont pas pivotées : vérifiez-les en jeu.",
+        'Cada píxel se traslada según un mapa de correspondencia UV horneado a partir de las mallas de los cuerpos. El color y el alfa no se recalculan: los overlays se ven tal como los diseñó su autor.<br><br>El <b>cuerpo, las manos y los pies</b> de 3BA comparten un único atlas UBE. <b>Cara</b>: cabeza vanilla ⇄ cabeza UBE.<br>Los mapas de normales se trasladan, pero las direcciones que contienen no se rotan: compruébalos en el juego.',
+        '每个像素都按照由身体模型烘焙出的 UV 对应图进行迁移。颜色和 Alpha 不会被重新计算，叠加层的效果与作者原作完全一致。<br><br>3BA 的<b>身体、手部和足部</b>共用一张 UBE 图集。<b>面部</b>：原版头部 ⇄ UBE 头部。<br>法线贴图也会迁移，但其中存储的方向不会随之旋转，请在游戏中检查。',
+        '各ピクセルは、ボディのメッシュからベイクした UV 対応マップに沿って移されます。色とアルファは再計算されないため、オーバーレイは作者の意図どおりに表示されます。<br><br>3BA の<b>ボディ・手・足</b>は 1 枚の UBE アトラスにまとめられます。<b>顔</b>：バニラ頭部 ⇄ UBE 頭部。<br>ノーマルマップも変換されますが、法線の向きは回転されないため、ゲーム内で確認してください。',
+        '각 픽셀은 바디 메시에서 베이크한 UV 대응 맵을 따라 옮겨집니다. 색상과 알파는 다시 계산되지 않으므로 오버레이가 제작자의 의도 그대로 보입니다.<br><br>3BA의 <b>바디, 손, 발</b>은 하나의 UBE 아틀라스를 함께 씁니다. <b>얼굴</b>: 바닐라 머리 ⇄ UBE 머리.<br>노멀 맵도 변환되지만 그 안의 방향은 회전되지 않으니 게임에서 확인하세요.'),
     'how_atlas': (
-        'To get <b>one UBE atlas</b> from separate 3BA body, hands and feet textures, select their rows and choose '
-        '“Combine into one UBE atlas” in the context menu, or press “Find atlases”.',
-        'Чтобы получить <b>один атлас UBE</b> из отдельных текстур тела, рук и ступней 3BA, выделите их строки и '
-        'выберите в контекстном меню «Объединить в один атлас UBE» или нажмите «Собрать атласы».',
-        'Für <b>einen UBE-Atlas</b> aus getrennten 3BA-Texturen für Körper, Hände und Füße die Zeilen markieren und '
-        'im Kontextmenü „Zu einem UBE-Atlas zusammenfassen“ wählen oder auf „Atlanten finden“ klicken.',
-        'Pour obtenir <b>un seul atlas UBE</b> à partir de textures 3BA séparées de corps, mains et pieds, '
-        'sélectionnez leurs lignes et choisissez « Combiner en un seul atlas UBE » dans le menu contextuel, ou '
-        'cliquez sur « Trouver les atlas ».',
-        'Para obtener <b>un solo atlas UBE</b> a partir de texturas 3BA separadas de cuerpo, manos y pies, '
-        'selecciona sus filas y elige «Combinar en un solo atlas UBE» en el menú contextual, o pulsa «Buscar atlas».',
-        '若要将分开的 3BA 身体、手部和足部贴图合成<b>一张 UBE 图集</b>，请选中这些行，在右键菜单中选择'
-        '“合并为一张 UBE 图集”，或点击“查找图集”。',
-        '別々の 3BA ボディ・手・足テクスチャから<b>1 枚の UBE アトラス</b>を作るには、それらの行を選択して右クリック'
-        'メニューの「1 枚の UBE アトラスに統合」を選ぶか、「アトラスを検出」を押します。',
-        "따로 있는 3BA 바디·손·발 텍스처로 <b>하나의 UBE 아틀라스</b>를 만들려면 해당 행을 선택하고 우클릭 메뉴에서 "
-        "'하나의 UBE 아틀라스로 합치기'를 고르거나 '아틀라스 찾기'를 누르세요."),
+        'To get <b>one UBE atlas</b> from separate 3BA / UNP body, hands and feet textures, select their rows and choose “Combine into one UBE atlas” in the context menu, or press “Find atlases”.',
+        'Чтобы получить <b>один атлас UBE</b> из отдельных текстур тела, рук и ступней 3BA / UNP, выделите их строки и выберите в контекстном меню «Объединить в один атлас UBE» или нажмите «Собрать атласы».',
+        'Für <b>einen UBE-Atlas</b> aus getrennten 3BA / UNP-Texturen für Körper, Hände und Füße die Zeilen markieren und im Kontextmenü „Zu einem UBE-Atlas zusammenfassen“ wählen oder auf „Atlanten finden“ klicken.',
+        'Pour obtenir <b>un seul atlas UBE</b> à partir de textures 3BA / UNP séparées de corps, mains et pieds, sélectionnez leurs lignes et choisissez « Combiner en un seul atlas UBE » dans le menu contextuel, ou cliquez sur « Trouver les atlas ».',
+        'Para obtener <b>un solo atlas UBE</b> a partir de texturas 3BA / UNP separadas de cuerpo, manos y pies, selecciona sus filas y elige «Combinar en un solo atlas UBE» en el menú contextual, o pulsa «Buscar atlas».',
+        '若要将分开的 3BA / UNP 身体、手部和足部贴图合成<b>一张 UBE 图集</b>，请选中这些行，在右键菜单中选择“合并为一张 UBE 图集”，或点击“查找图集”。',
+        '別々の 3BA / UNP ボディ・手・足テクスチャから<b>1 枚の UBE アトラス</b>を作るには、それらの行を選択して右クリックメニューの「1 枚の UBE アトラスに統合」を選ぶか、「アトラスを検出」を押します。',
+        "따로 있는 3BA / UNP 바디·손·발 텍스처로 <b>하나의 UBE 아틀라스</b>를 만들려면 해당 행을 선택하고 우클릭 메뉴에서 '하나의 UBE 아틀라스로 합치기'를 고르거나 '아틀라스 찾기'를 누르세요."),
 }
 
 assert all(len(v) == len(LANGS) for v in S.values()), [k for k, v in S.items() if len(v) != len(LANGS)]
