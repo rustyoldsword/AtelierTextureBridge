@@ -78,3 +78,4 @@ venv\Scripts\python.exe build.py
 - `texconv.exe` — Microsoft DirectXTex, MIT.
 - Шрифт Atelier UI — Inter 4.1 (Rasmus Andersson), SIL Open Font License 1.1 (`app/assets/font/OFL.txt`).
 - PyQt6 / Qt 6 — GPLv3 / LGPLv3; NumPy — BSD; Pillow — HPND.
+- Сама программа — GPL-3.0 (`LICENSE`).

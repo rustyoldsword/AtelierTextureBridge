@@ -36,6 +36,7 @@ def main():
 
     out = os.path.join(HERE, 'dist', NAME)
     shutil.copyfile(os.path.join(HERE, 'README.md'), os.path.join(out, 'README.md'))
+    shutil.copyfile(os.path.join(HERE, 'LICENSE'), os.path.join(out, 'LICENSE.txt'))
     lic = os.path.join(out, 'licenses')
     os.makedirs(lic, exist_ok=True)
     shutil.copyfile(os.path.join(APP, 'assets', 'font', 'OFL.txt'), os.path.join(lic, 'AtelierUI-font-OFL.txt'))
