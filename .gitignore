@@ -1,0 +1,8 @@
+venv/
+build/
+dist/
+maps_raw/
+test/
+__pycache__/
+*.pyc
+*.spec
