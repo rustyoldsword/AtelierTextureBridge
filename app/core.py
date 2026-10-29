@@ -60,6 +60,12 @@ def texture_id(layout, part):
     return 'ube' if layout == 'ube' else f'{layout}_{part}'
 
 
+def physical_texture(layout, part):
+    """The texture file a part is painted on: 3BA and UNP keep the feet on the body texture."""
+    tid = texture_id(layout, part)
+    return tid.replace('_feet', '_body') if layout != 'ube' else tid
+
+
 def map_name(direction, part):
     src, dst = direction
     return f'{texture_id(src, part)}-{texture_id(dst, part)}'
@@ -304,26 +310,60 @@ def remap(src, mu, mv, cov, rows=512):
     return out
 
 
-def dilate(rgba, cov):
-    """Fill every uncovered texel from the nearest covered colour (seam padding for opaque skin/detail maps),
-    so mips and filtering never pull black in at UV island edges. Push-pull: halve the image with
-    coverage-weighted 2x2 averages down to 1 px, then on the way back up fill each level's gaps from the
-    coarser one — linear time, unlike growing the border texel by texel."""
-    rgb = rgba[..., :3] * cov[..., None]
-    w = cov.astype(np.float32)
+def fill_outside(img, mask):
+    """Every texel outside `mask` gets the nearest inside value (all channels). Push-pull: halve the image with
+    mask-weighted 2x2 averages down to 1 px, then on the way back up fill each level's gaps from the coarser
+    one — linear time, unlike growing the border texel by texel."""
+    c = img.shape[2]
+    acc = img * mask[..., None]
+    w = mask.astype(np.float32)
     levels = []
-    while rgb.shape[0] > 1 and rgb.shape[0] % 2 == 0 and rgb.shape[1] % 2 == 0:
-        levels.append((rgb, w))
-        h, wd = rgb.shape[0] // 2, rgb.shape[1] // 2
-        rgb = rgb.reshape(h, 2, wd, 2, 3).sum(axis=(1, 3))
+    while min(acc.shape[:2]) > 1 and acc.shape[0] % 2 == 0 and acc.shape[1] % 2 == 0:
+        levels.append((acc, w))
+        h, wd = acc.shape[0] // 2, acc.shape[1] // 2
+        acc = acc.reshape(h, 2, wd, 2, c).sum(axis=(1, 3))
         w = w.reshape(h, 2, wd, 2).sum(axis=(1, 3))
-    color = rgb / np.maximum(w, 1e-6)[..., None]
-    for rgb, w in reversed(levels):
-        up = color.repeat(2, axis=0).repeat(2, axis=1)
-        color = np.where(w[..., None] > 0, rgb / np.maximum(w, 1e-6)[..., None], up)
-    out = rgba[..., :3].copy()
-    out[~cov] = color[~cov]
+    val = acc / np.maximum(w, 1e-6)[..., None]
+    for acc, w in reversed(levels):
+        up = val.repeat(2, axis=0).repeat(2, axis=1)
+        val = np.where(w[..., None] > 0, acc / np.maximum(w, 1e-6)[..., None], up)
+    out = img.copy()
+    out[~mask] = val[~mask]
     return out
+
+
+def dilate(rgba, cov):
+    """Seam padding for opaque skin/detail output, so mips and filtering never pull black in at island edges."""
+    return fill_outside(rgba[..., :3], cov)
+
+
+@lru_cache(maxsize=1)
+def _island_masks():
+    z = np.load(os.path.join(MAPS_DIR, 'islands.npz'))
+    return {k: np.unpackbits(z[k]).reshape(MAP_RES, MAP_RES).astype(bool) for k in z.files}
+
+
+def pad_islands(img, layout, part):
+    """Edge padding of a SOURCE texture: colour and alpha of every UV island run on past its edge into the empty
+    space around it, other islands untouched. Bilinear reads at an island's border then stay on that island
+    instead of mixing in the void (transparent for overlays, filler for skins); in UBE the hands and feet islands
+    are so small that, magnified ~3x into 3BA, that mix showed as rings and lines along every seam.
+    Averaged premultiplied, so a fading paint edge pads with its own colour."""
+    islands = _island_masks().get(physical_texture(layout, part))
+    if islands is None:
+        return img
+    h, w = img.shape[:2]
+    rows = ((np.arange(h) + 0.5) * MAP_RES / h).astype(int)
+    cols = ((np.arange(w) + 0.5) * MAP_RES / w).astype(int)
+    mask = islands[np.ix_(rows, cols)]  # nearest island texel for each source texel (any size, any aspect)
+    if mask.all() or not mask.any():
+        return img
+    pm = np.concatenate([img[..., :3] * img[..., 3:4], img[..., 3:4]], axis=-1)
+    pm = fill_outside(pm, mask)
+    a = pm[..., 3:4]
+    out = np.concatenate([np.where(a > 1e-6, pm[..., :3] / np.maximum(a, 1e-6), 0.0), a], axis=-1)
+    out[mask] = img[mask]
+    return out.astype(np.float32)
 
 
 # ---------------------------------------------------------------- layout check
@@ -459,7 +499,7 @@ def convert_sources(sources, dst_path, direction, opts: Options):
             src[..., 3] = 1.0
         else:
             all_opaque = False
-        images.append(src)
+        images.append(pad_islands(src, direction[0], _part))
     out, filled = _composite(images, sources, direction, res)
     del images
     if all_opaque:
@@ -482,7 +522,7 @@ def preview_sources(sources, direction, size=512):
     """(first source RGBA, converted RGBA) as uint8 arrays at preview size; several sources are composited
     into one atlas the same way convert_sources does."""
     sources = _ordered(sources)
-    images = [load_rgba(path) for path, _ in sources]
+    images = [pad_islands(load_rgba(path), direction[0], part) for path, part in sources]
     out, _filled = _composite(images, sources, direction, size)
     first = np.asarray(Image.fromarray((images[0] * 255 + 0.5).astype(np.uint8), 'RGBA').resize(
         (size, size), Image.BILINEAR))

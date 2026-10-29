@@ -82,6 +82,16 @@ def main():
             print(f'{name:22s} composed, covered {cov.mean():6.1%}')
     np.savez_compressed(os.path.join(OUT, 'masks.npz'), **{n.replace('-', '__'): v for n, v in masks.items()})
 
+    # full-resolution UV islands of every texture file (union of all maps that write into it; 3BA / UNP feet live on
+    # the body texture): the app pads source textures past these edges before sampling (core.pad_islands)
+    islands = {}
+    for name, (_m, cov) in maps.items():
+        tid = name.split('-')[1]
+        tid = tid.replace('_feet', '_body') if not tid.startswith('ube') else tid
+        islands[tid] = islands.get(tid, np.zeros_like(cov)) | cov
+    np.savez_compressed(os.path.join(OUT, 'islands.npz'), **{k: np.packbits(v) for k, v in islands.items()})
+    print('islands:', {k: f'{v.mean():.1%}' for k, v in islands.items()})
+
     # round trip on 3BA texels: 3BA -> other layout (reverse map) -> 3BA (forward map)
     pairs = [('UBE', part, 'ube_head-3ba_head' if part == 'head' else f'ube-3ba_{part}',
               '3ba_head-ube_head' if part == 'head' else f'3ba_{part}-ube') for part in ('body', 'hands', 'feet', 'head')]
