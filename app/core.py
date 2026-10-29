@@ -518,6 +518,24 @@ def convert_file(src_path, dst_path, direction, part, opts: Options):
     return convert_sources([(src_path, part)], dst_path, direction, opts)
 
 
+def companion_outputs(direction, part, dst_path):
+    """Extra files one source should also produce: UBE keeps the hands in the body atlas, 3BA and UNP give them a
+    texture of their own, so a UBE 'body' converted out of UBE also writes the hands file next to the body one
+    (femalebody_1 -> femalehands_1; a name without 'body' gets '_hands')."""
+    if part != 'body' or direction[0] != 'ube' or direction[1] == 'ube':
+        return []
+    folder, name = os.path.split(dst_path)
+    stem, ext = os.path.splitext(name)
+    m = re.search('body', stem, re.I)
+    if m:
+        word = m.group(0)
+        hands = 'HANDS' if word.isupper() else 'Hands' if word[0].isupper() else 'hands'
+        stem = stem[:m.start()] + hands + stem[m.end():]
+    else:
+        stem += '_hands'
+    return [('hands', os.path.join(folder, stem + ext))]
+
+
 def preview_sources(sources, direction, size=512):
     """(first source RGBA, converted RGBA) as uint8 arrays at preview size; several sources are composited
     into one atlas the same way convert_sources does."""

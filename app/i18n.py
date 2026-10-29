@@ -437,6 +437,30 @@ S = {
         '若要将分开的 3BA / UNP 身体、手部和足部贴图合成<b>一张 UBE 图集</b>，请选中这些行，在右键菜单中选择“合并为一张 UBE 图集”，或点击“查找图集”。',
         '別々の 3BA / UNP ボディ・手・足テクスチャから<b>1 枚の UBE アトラス</b>を作るには、それらの行を選択して右クリックメニューの「1 枚の UBE アトラスに統合」を選ぶか、「アトラスを検出」を押します。',
         "따로 있는 3BA / UNP 바디·손·발 텍스처로 <b>하나의 UBE 아틀라스</b>를 만들려면 해당 행을 선택하고 우클릭 메뉴에서 '하나의 UBE 아틀라스로 합치기'를 고르거나 '아틀라스 찾기'를 누르세요."),
+    # ---- hands file next to a UBE body
+    'chk_hands': ('Also create the hands texture when converting from UBE', 'Из UBE заодно делать текстуру рук',
+                  'Aus UBE zusätzlich die Handtextur erzeugen', 'Depuis UBE, créer aussi la texture des mains',
+                  'Desde UBE, crear también la textura de las manos', '从 UBE 转换时同时生成手部贴图',
+                  'UBE から変換するときは手のテクスチャも作成', 'UBE에서 변환할 때 손 텍스처도 함께 만들기'),
+    'chk_hands_tip': (
+        'UBE keeps the hands in the body atlas; 3BA and UNP give them a texture of their own.\n'
+        'With this on, every UBE body texture also writes the hands file next to it (femalebody_1 -> femalehands_1).',
+        'В UBE руки лежат в атласе тела, а у 3BA и UNP — в отдельной текстуре.\n'
+        'С этой галочкой каждая UBE-текстура тела даёт рядом и файл рук (femalebody_1 → femalehands_1).',
+        'UBE hat die Hände im Körperatlas, 3BA und UNP geben ihnen eine eigene Textur.\n'
+        'Damit schreibt jede UBE-Körpertextur auch die Handdatei daneben (femalebody_1 → femalehands_1).',
+        "UBE place les mains dans l'atlas du corps ; 3BA et UNP leur donnent leur propre texture.\n"
+        'Activé, chaque texture de corps UBE écrit aussi le fichier des mains à côté (femalebody_1 → femalehands_1).',
+        'UBE guarda las manos en el atlas del cuerpo; 3BA y UNP les dan una textura propia.\n'
+        'Activado, cada textura de cuerpo UBE escribe también el archivo de manos al lado (femalebody_1 → femalehands_1).',
+        'UBE 把手部放在身体图集里，而 3BA 和 UNP 使用单独的手部贴图。\n'
+        '开启后，每张 UBE 身体贴图都会在旁边同时生成手部文件（femalebody_1 → femalehands_1）。',
+        'UBE では手はボディアトラスに含まれ、3BA と UNP では手専用のテクスチャになります。\n'
+        'オンにすると、UBE のボディテクスチャごとに手のファイルも隣に作成します（femalebody_1 → femalehands_1）。',
+        'UBE는 손을 바디 아틀라스에 두지만 3BA와 UNP는 손 전용 텍스처를 씁니다.\n'
+        '켜면 UBE 바디 텍스처마다 옆에 손 파일도 함께 만듭니다 (femalebody_1 → femalehands_1).'),
+    'sum_hands': ('+ hands: {name}', '+ руки: {name}', '+ Hände: {name}', '+ mains : {name}', '+ manos: {name}',
+                  '+ 手部：{name}', '+ 手: {name}', '+ 손: {name}'),
 }
 
 assert all(len(v) == len(LANGS) for v in S.values()), [k for k, v in S.items() if len(v) != len(LANGS)]

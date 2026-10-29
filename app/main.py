@@ -152,7 +152,10 @@ def summary_text(s):
     text = f"{s['res']}px · {s['fmt']}"
     if s.get('parts', 1) > 1:
         text += f" · {tr('sum_parts', n=s['parts'])}"
-    return text + (f" · {tr('sum_opaque')}" if s['opaque'] else '')
+    text += f" · {tr('sum_opaque')}" if s['opaque'] else ''
+    for extra in s.get('companions', []):
+        text += f" · {tr('sum_hands', name=os.path.basename(extra))}"
+    return text
 
 
 def error_text(e):
@@ -194,8 +197,9 @@ class PreviewTask(QtCore.QRunnable):
 
 
 class Converter(QtCore.QThread):
-    """jobs: [(sources [(path, part)], dst)] — several sources make one UBE atlas.
-    payload per progress state: None (busy), summary dict (ok), exception (warn/err)."""
+    """jobs: [(sources [(path, part)], dst, companions [(part, dst)])] — several sources make one UBE atlas;
+    companions are extra files from the same single source (core.companion_outputs: the hands next to a UBE body).
+    payload per progress state: None (busy), summary dict (ok, with 'companions': written paths), exception."""
 
     def __init__(self, jobs, direction, opts, sig):
         super().__init__()
@@ -205,12 +209,16 @@ class Converter(QtCore.QThread):
     def run(self):
         ok = failed = skipped = 0
         t0 = time.time()
-        for i, (sources, dst) in enumerate(self.jobs):
+        for i, (sources, dst, companions) in enumerate(self.jobs):
             if self.cancelled:
                 break
             self.sig.progress.emit(i, 'busy', None, dst)
             try:
                 summary = core.convert_sources(sources, dst, self.direction, self.opts)
+                summary['companions'] = []
+                for part, extra in companions:
+                    core.convert_sources([(sources[0][0], part)], extra, self.direction, self.opts)
+                    summary['companions'].append(extra)
                 ok += 1
                 self.sig.progress.emit(i, 'ok', summary, dst)
             except core.ExistsError as e:
@@ -524,7 +532,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ed_out.textChanged.connect(self.update_state)
         self.chk_over = QtWidgets.QCheckBox()
         self.chk_open = QtWidgets.QCheckBox()
+        self.chk_hands = QtWidgets.QCheckBox()
         ol.addWidget(self.chk_over)
+        ol.addWidget(self.chk_hands)
         ol.addWidget(self.chk_open)
         lay.addWidget(opts)
 
@@ -609,6 +619,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ed_out.setPlaceholderText(tr('out_placeholder'))
         self.chk_over.setText(tr('chk_overwrite'))
         self.chk_open.setText(tr('chk_open'))
+        self.chk_hands.setText(tr('chk_hands'))
+        self.chk_hands.setToolTip(tr('chk_hands_tip'))
         self.how.setText(tr('how_text') + '<br><br>' + tr('how_atlas'))
         self.btn_stop.setText(tr('btn_stop'))
         self.btn_go.setText(tr('btn_convert'))
@@ -683,7 +695,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_go.setEnabled(n > 0 and not busy)
         self.btn_stop.setVisible(busy)
         for w in (self.btn_add, self.btn_add_dir, self.btn_remove, self.btn_clear, self.cb_from, self.cb_to, self.btn_swap,
-                  self.cb_res, self.cb_fmt, self.cb_opaque, self.ed_out, self.chk_over):
+                  self.cb_res, self.cb_fmt, self.cb_opaque, self.ed_out, self.chk_over, self.chk_hands):
             w.setEnabled(not busy)
         tag = core.LAYOUT_TAGS[self.direction[1]]
         self.out_hint.setText(tr('out_hint_custom') if self.ed_out.text().strip() else tr('out_hint_auto', tag=tag))
@@ -1081,14 +1093,21 @@ class MainWindow(QtWidgets.QMainWindow):
                     QtWidgets.QMessageBox.warning(self, APP_NAME, error_text(e))
                     return
                 items.append(u)
-                jobs.append(([(m.data(0, ROLE_PATH), self.part_of(m)) for m in self.members(u)], self.output_path(u)))
-            else:  # single files, and group members one by one towards 3BA
+                jobs.append(([(m.data(0, ROLE_PATH), self.part_of(m)) for m in self.members(u)], self.output_path(u), []))
+            else:  # single files, and group members one by one when not building a UBE atlas
                 for it in (self.members(u) if self.is_group(u) else [u]):
                     items.append(it)
-                    jobs.append(([(it.data(0, ROLE_PATH), self.part_of(it))], self.output_path(it)))
+                    jobs.append(([(it.data(0, ROLE_PATH), self.part_of(it))], self.output_path(it), []))
+        if self.chk_hands.isChecked():
+            # a UBE body also writes the 3BA / UNP hands file, unless that texture is already queued as hands
+            queued_hands = {it.data(0, ROLE_PATH).lower() for it in self.leaves() if self.part_of(it) == 'hands'}
+            for sources, dst, companions in jobs:
+                if len(sources) == 1 and sources[0][0].lower() not in queued_hands:
+                    companions.extend(core.companion_outputs(self.direction, sources[0][1], dst))
         clash = {}
-        for sources, dst in jobs:
-            clash.setdefault(dst.lower(), []).append(' + '.join(p for p, _ in sources))
+        for sources, dst, companions in jobs:
+            for out in [dst] + [extra for _part, extra in companions]:
+                clash.setdefault(out.lower(), []).append(' + '.join(p for p, _ in sources))
         dup = [v for v in clash.values() if len(v) > 1]  # two jobs, one file; an atlas's own sources are fine
         if dup:
             QtWidgets.QMessageBox.warning(self, APP_NAME, tr('clash', files='\n'.join(dup[0])))
@@ -1205,6 +1224,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ed_out.setText(s.value('out', ''))
         self.chk_over.setChecked(s.value('overwrite', False, type=bool))
         self.chk_open.setChecked(s.value('open', True, type=bool))
+        self.chk_hands.setChecked(s.value('hands_companion', True, type=bool))
         geo = s.value('geometry')
         if geo is not None:
             self.restoreGeometry(geo)
@@ -1227,6 +1247,7 @@ class MainWindow(QtWidgets.QMainWindow):
         s.setValue('out', self.ed_out.text().strip())
         s.setValue('overwrite', self.chk_over.isChecked())
         s.setValue('open', self.chk_open.isChecked())
+        s.setValue('hands_companion', self.chk_hands.isChecked())
         s.setValue('geometry', self.saveGeometry())
         super().closeEvent(e)
 
